@@ -1,0 +1,96 @@
+
+
+
+PARSER_BEGIN(TP1)
+
+import java.io.InputStream;
+
+public class TP1 {
+    public static void main(String[] args) {
+        TP1 parseur;
+        AST ast;
+        try {
+            parseur = new TP1(System.in);
+            ast = parseur.mainNT();
+            System.out.println(ast.toString());
+        } catch (Throwable e) {
+            System.out.println(e.getMessage());
+        }
+    }
+}
+
+
+PARSER_END(TP1)
+
+SKIP : { " " | "\t"|"\r"}
+
+TOKEN :
+{
+      < NOMBRE: ["1"-"9"] (["0"-"9"])* >
+    | < EOL: ";">
+    | < FLOAT :((["0"-"9"])*["."])?(["0"-"9"])+ >
+    | < BOOL: "true"| "false">
+    | < IDENT: (["a"-"z"])+(["a"-"z"] | ["A"-"Z" ]|["0"-"9"]|"_")*>
+
+}
+
+AST.ExpressionA mainNT () :
+{
+    AST.ExpressionA res;
+}
+{
+
+    res= expression() <EOL> { return res;}
+}
+
+AST.ExpressionA expression () :
+{
+    /*  Déclaration des variables*/
+    AST.ExpressionA res;
+    AST.ExpressionA temp;
+}
+{
+
+    /* la variable temporaire*/
+    temp=terme()  {res = temp;}
+    (  "===" (temp=terme()) {res = new AST.Egal(res, temp);}
+     | "+" (temp=terme()) {res = new AST.Plus(res, temp);}
+     | "-" (temp=terme()) {res = new AST.Moins(res, temp);}
+     | "="   (temp=terme()) {res = new AST.SignatureEgal(res, temp);}
+     )*
+      {return res;}
+}
+
+AST.ExpressionA terme () :
+{
+    AST.ExpressionA res;
+    AST.ExpressionA temp;
+}
+{
+    temp = facteur() {res = temp;}
+    ("*" (temp=facteur()) {res = new AST.Mult(res, temp);}
+    | "/" (temp=facteur()) {res = new AST.Div(res, temp);}
+    | "%" (temp=facteur()) {res = new AST.Mod(res, temp);}
+    )*
+    {return res;}
+}
+
+AST.ExpressionA facteur () :
+{
+    AST.ExpressionA res;
+    AST.ExpressionA temp;
+    Token token;
+}
+{
+    "(" (temp = expression()) ")" {return temp;}
+    | "-" (temp= facteur()) {return new AST.Neg(temp);}
+    | "+" (temp= facteur()) {return new AST.Pos(temp);}
+    | token = <NOMBRE>  {return new AST.Num(Integer.parseInt(token.image));}
+    | token = <FLOAT> { return new AST.Flo(Float.parseFloat(token.image));}
+    | token = <BOOL> { return new AST.Bool(Boolean.parseBoolean(token.image));}
+    | token = <IDENT> {return new AST.Ident(token.image);}
+
+  {return res;}
+}
+
+
